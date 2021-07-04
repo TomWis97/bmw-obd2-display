@@ -1,5 +1,5 @@
 #include "BluetoothSerial.h"
-#include "ELMduino.h"
+#include "src/ELMduino/src/ELMduino.h"
 
 
 BluetoothSerial SerialBT;
@@ -11,6 +11,7 @@ ELM327 myELM327;
 
 
 uint32_t rpm = 0;
+uint32_t coolant = 0;
 
 
 void setup()
@@ -49,8 +50,20 @@ void loop()
     rpm = (uint32_t)tempRPM;
     Serial.print("RPM: "); Serial.println(rpm);
 
+    // Coolant temperature
+    float tempCoolant = myELM327.engineCoolantTemp();
+    coolant = (uint32_t)tempCoolant;
+    Serial.print("Coolant: "); Serial.println(coolant);
+
     // Oil temperature
-    if (myELM327.queryPID("224402")) {
+    //if (myELM327.queryPID("224402")) {
+    //  uint64_t tempOil = myELM327.findResponse();
+    //  Serial.print("OIL Temperature:");
+    //  Serial.println(tempOil);
+    //} else {
+    //  Serial.println("Error while getting temperature!!");
+    //}
+    if (myELM327.queryPID(34, 17410)) {
       uint64_t tempOil = myELM327.findResponse();
       Serial.print("OIL Temperature:");
       Serial.println(tempOil);
