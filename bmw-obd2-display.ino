@@ -23,7 +23,9 @@ void setup()
 
   DEBUG_PORT.begin(115200);
   //SerialBT.setPin("1234");
-  ELM_PORT.begin("ArduHUD", true);
+
+  // Second argument is whether to debug to Serial.
+  ELM_PORT.begin("ArduHUD", false);
   
   if (!ELM_PORT.connect("OBDII"))
   {
@@ -43,6 +45,7 @@ void setup()
 
 void loop()
 {
+  Serial.println("------------------------------");
   float tempRPM = myELM327.rpm();
   if (myELM327.status == ELM_SUCCESS)
   {
@@ -53,20 +56,19 @@ void loop()
     // Coolant temperature
     float tempCoolant = myELM327.engineCoolantTemp();
     coolant = (uint32_t)tempCoolant;
-    Serial.print("Coolant: "); Serial.println(coolant);
+    Serial.print("Coolant temperature: "); Serial.println(coolant);
+
+    // Turbo pressure
+    float tempPressure = myELM327.manifoldPressure();
+    pressure = (uint32_t)tempPressure;
+    Serial.print("Turbo pressure: "); Serial.println(pressure);
 
     // Oil temperature
-    //if (myELM327.queryPID("224402")) {
-    //  uint64_t tempOil = myELM327.findResponse();
-    //  Serial.print("OIL Temperature:");
-    //  Serial.println(tempOil);
-    //} else {
-    //  Serial.println("Error while getting temperature!!");
-    //}
     if (myELM327.queryPID(34, 17410)) {
       uint64_t tempOil = myELM327.findResponse();
-      Serial.print("OIL Temperature:");
-      Serial.println(tempOil);
+      uint64_t oil = tempOil * 191.25 / 255 - 48;
+      Serial.print("Oil temperature:");
+      Serial.println(oil);
     } else {
       Serial.println("Error while getting temperature!!");
     }
