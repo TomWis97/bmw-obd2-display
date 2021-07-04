@@ -24,8 +24,11 @@ void setup()
   DEBUG_PORT.begin(115200);
   //SerialBT.setPin("1234");
 
+  DEBUG_PORT.println("bmw-obd2-display by TomWis97 booting up...");
+  DEBUG_PORT.println("Version: 0.0.1");
+
   // Second argument is whether to debug to Serial.
-  ELM_PORT.begin("ArduHUD", false);
+  ELM_PORT.begin("ArduHUD", true);
   
   if (!ELM_PORT.connect("OBDII"))
   {
@@ -60,8 +63,7 @@ void loop()
 
     // Turbo pressure
     float tempPressure = myELM327.manifoldPressure();
-    pressure = (uint32_t)tempPressure;
-    Serial.print("Turbo pressure: "); Serial.println(pressure);
+    Serial.print("Turbo pressure: "); Serial.println(tempPressure);
 
     // Oil temperature
     if (myELM327.queryPID(34, 17410)) {
