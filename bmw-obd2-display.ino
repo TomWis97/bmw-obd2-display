@@ -19,6 +19,7 @@ uint64_t oil = 0;
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <Fonts/FreeSans9pt7b.h>
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -42,12 +43,14 @@ void setup()
   }
   delay(2000);
   display.clearDisplay();
+  display.setRotation(2);
+  display.setFont(&FreeSans9pt7b);
 
   display.setTextSize(1);
   display.setTextColor(WHITE);
-  display.setCursor(0, 10);
-  // Display static text
-  display.println("bmw-obd2-display booting...");
+  // Display boot text
+  display.setCursor(0, 15);
+  display.println("Booting...");
   display.display(); 
   // Display set-up done
 
@@ -55,7 +58,7 @@ void setup()
   //SerialBT.setPin("1234");
 
   DEBUG_PORT.println("bmw-obd2-display by TomWis97 booting up...");
-  DEBUG_PORT.println("Version: 0.0.1");
+  DEBUG_PORT.println("Version: 0.1.0");
 
   // Second argument is whether to debug to Serial.
   ELM_PORT.begin("ArduHUD", true);
@@ -65,6 +68,10 @@ void setup()
     DEBUG_PORT.println("Couldn't connect to OBD scanner - Phase 1");
     while(1);
   }
+  display.setCursor(0, 30);
+  display.println("BT connected.");
+  display.display(); 
+  delay(1000);
 
   if (!myELM327.begin(ELM_PORT, true, 2000))
   {
@@ -72,6 +79,10 @@ void setup()
     while (1);
   }
 
+  display.setCursor(0, 45);
+  display.println("Serial connected.");
+  display.display(); 
+  delay(2000);
   Serial.println("Connected to ELM327");
 }
 
@@ -107,22 +118,55 @@ void loop()
       Serial.println("Error while getting temperature!!");
     }
 
-    // Render temperatures on display
-    display.clearDisplay();
-    display.setTextSize(1);
-    display.setCursor(0, 20);
-    display.println("Oil:");
-    display.setCursor(0, 41);
-    display.println("Coolant:");
-    display.setTextSize(3);
-    display.setCursor(55, 0);
-    display.println(oil);
-    display.setCursor(55, 32);
-    display.println(coolant);
-    display.display();
+    display_normal();
 
     delay(2000);
   } else {
+    display_noconn();
     myELM327.printError();
   }
+}
+
+void display_normal()
+{
+  // render base layout
+  display.clearDisplay();
+  //display.setfont();
+  display.drawFastVLine(63, 0, 64, WHITE);
+  display.setTextSize(1);
+  display.setCursor(0,14);
+  display.println("oil");
+  display.setCursor(65,14);
+  display.println("coolant");
+
+  display.setFont(&FreeSans9pt7b);
+  display.setTextSize(2);
+  display.setCursor(0,55);
+  display.println(oil);
+  display.setCursor(64,55);
+  display.println(coolant);
+  
+  display.display();
+}
+
+void display_noconn()
+{
+  // render base layout
+  display.clearDisplay();
+  //display.setFont();
+  display.drawFastVLine(63, 0, 64, WHITE);
+  display.setTextSize(1);
+  display.setCursor(0,14);
+  display.println("oil");
+  display.setCursor(65,14);
+  display.println("coolant");
+
+  display.setFont(&FreeSans9pt7b);
+  display.setTextSize(2);
+  display.setCursor(0,55);
+  display.println("---");
+  display.setCursor(64,55);
+  display.println("---");
+  
+  display.display();
 }
