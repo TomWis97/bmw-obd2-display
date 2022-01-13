@@ -44,6 +44,11 @@ void setup()
   delay(2000);
   display.clearDisplay();
   display.setRotation(2);
+
+  // DEBUGGING
+  draw_layout();
+  delay(100000);
+
   display.setFont(&FreeSans9pt7b);
 
   display.setTextSize(1);
@@ -169,4 +174,16 @@ void display_noconn()
   display.println("---");
   
   display.display();
+}
+
+
+//////////////////////////////////////
+// Normal layout
+
+void draw_layout()
+{
+  Serial.println("Display debugging: draw_layout()");
+  display.clearDisplay();
+  display.drawRoundRect(0, 0, 63, 32, 4, WHITE);
+  display.drawRoundRect(65, 0, 63, 32, 4, WHITE);
 }
