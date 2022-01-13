@@ -31,6 +31,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 void setup()
 {
+  Serial.begin(115200);
+
 #if LED_BUILTIN
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
@@ -184,6 +186,27 @@ void draw_layout()
 {
   Serial.println("Display debugging: draw_layout()");
   display.clearDisplay();
-  display.drawRoundRect(0, 0, 63, 32, 4, WHITE);
-  display.drawRoundRect(65, 0, 63, 32, 4, WHITE);
+  display.drawRoundRect(0, 0, 63, 45, 4, WHITE);
+  display.drawRoundRect(65, 0, 63, 45, 4, WHITE);
+  display.setFont(&FreeSans9pt7b);
+  display.setTextColor(WHITE);
+
+  // Draw icons
+  display.fillRect(5, 2, 14, 14, WHITE);
+  display.fillRect(69, 2, 14, 14, WHITE);
+
+  // Mock values
+  display.setTextSize(2);
+  display.setCursor(0, 41);
+  display.println("126");
+  display.setCursor(64, 41);
+  display.println("126");
+
+  // Labels
+  //display.setTextSize(1);
+  //display.setCursor(0,14);
+  //display.println("Oil");
+  //display.setCursor(65,14);
+  //display.println("Coolant");
+  //display.display();
 }
