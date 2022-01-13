@@ -13,7 +13,10 @@ ELM327 myELM327;
 uint32_t rpm = 0;
 uint32_t coolant = 0;
 uint64_t oil = 0;
-
+float pressure = 0;
+float min_voltage = 0;
+float max_pressure = 0;
+bool monitor_voltage = true;
 
 // Display stuff
 #include <Wire.h>
@@ -92,30 +95,19 @@ void setup()
   display.clearDisplay();
   display.setRotation(2);
 
-  // DEBUGGING
-  mockup_boot();
-  delay(1000);
-  draw_layout();
-  delay(4000);
-  draw_battery(10.48);
-  draw_layout();
-  delay(100000);
-
   display.setFont(&FreeSans9pt7b);
-
-  display.setTextSize(1);
   display.setTextColor(WHITE);
-  // Display boot text
-  display.setCursor(0, 15);
-  display.println("Booting...");
-  display.display(); 
   // Display set-up done
+
+  display.clearDisplay();
+  draw_bootup(false, false);
+  display.display();
 
   DEBUG_PORT.begin(115200);
   //SerialBT.setPin("1234");
 
   DEBUG_PORT.println("bmw-obd2-display by TomWis97 booting up...");
-  DEBUG_PORT.println("Version: 0.1.0");
+  DEBUG_PORT.println("Version: 1.0.0");
 
   // Second argument is whether to debug to Serial.
   ELM_PORT.begin("ArduHUD", true);
@@ -123,24 +115,36 @@ void setup()
   if (!ELM_PORT.connect("OBDII"))
   {
     DEBUG_PORT.println("Couldn't connect to OBD scanner - Phase 1");
-    while(1);
+    for (int steps = 0; steps <= 240; steps++) {
+      display.clearDisplay();
+      draw_bootup(false, false);
+      draw_bootup_animation(steps);
+      display.display();
+      delay(250);
+    }
+    ESP.restart();
   }
-  display.setCursor(0, 30);
-  display.println("BT connected.");
-  display.display(); 
+  display.clearDisplay();
+  draw_bootup(true, false);
+  display.display();
   delay(1000);
-
   if (!myELM327.begin(ELM_PORT, true, 2000))
   {
-    Serial.println("Couldn't connect to OBD scanner - Phase 2");
-    while (1);
+    for (int steps = 0; steps <= 240; steps++) {
+      display.clearDisplay();
+      draw_bootup(true, false);
+      draw_bootup_animation(steps);
+      display.display();
+      delay(250);
+    }
+    ESP.restart();
   }
-
-  display.setCursor(0, 45);
-  display.println("Serial connected.");
-  display.display(); 
-  delay(2000);
+  display.clearDisplay();
+  draw_bootup(true, true);
+  display.display();
+  delay(1000);
   Serial.println("Connected to ELM327");
+  min_voltage = myELM327.ctrlModVoltage();
 }
 
 
@@ -162,17 +166,32 @@ void loop()
     Serial.print("Coolant temperature: "); Serial.println(coolant);
 
     // Turbo pressure
-    float tempPressure = myELM327.manifoldPressure();
-    Serial.print("Turbo pressure: "); Serial.println(tempPressure);
+    float pressure = myELM327.manifoldPressure();
+    Serial.print("Turbo pressure: "); Serial.println(pressure);
+    if (pressure > max_pressure) {
+      max_pressure = pressure;
+    }
 
     // Oil temperature
     if (myELM327.queryPID(34, 17410)) {
       uint64_t tempOil = myELM327.findResponse();
       oil = tempOil * 191.25 / 255 - 48;
-      Serial.print("Oil temperature:");
-      Serial.println(oil);
+      Serial.print("Oil temperature:"); Serial.println(oil);
     } else {
       Serial.println("Error while getting temperature!!");
+    }
+
+    if (monitor_voltage == true) {
+      // Voltage
+      float tempVoltage = myELM327.ctrlModVoltage();
+      if (tempVoltage < min_voltage) {
+        min_voltage = tempVoltage;
+      }
+      if (rpm > 800) {
+        //Engine has been started. Displaying minimum voltage.
+        draw_battery(min_voltage);
+        monitor_voltage = false;
+      }
     }
 
     display_normal();
@@ -186,46 +205,31 @@ void loop()
 
 void display_normal()
 {
-  // render base layout
-  display.clearDisplay();
-  //display.setfont();
-  display.drawFastVLine(63, 0, 64, WHITE);
-  display.setTextSize(1);
-  display.setCursor(0,14);
-  display.println("oil");
-  display.setCursor(65,14);
-  display.println("coolant");
-
-  display.setFont(&FreeSans9pt7b);
+  draw_layout();
+  // Mock values
   display.setTextSize(2);
-  display.setCursor(0,55);
+  display.setCursor(0, 41);
   display.println(oil);
-  display.setCursor(64,55);
+  display.setCursor(64, 41);
   display.println(coolant);
-  
-  display.display();
+  display.setTextSize(1);
+  display.setCursor(20, 60);
+  display.println(String(pressure, 2) + "/" + String(max_pressure, 2));
 }
 
 void display_noconn()
 {
-  // render base layout
-  display.clearDisplay();
-  //display.setFont();
-  display.drawFastVLine(63, 0, 64, WHITE);
-  display.setTextSize(1);
-  display.setCursor(0,14);
-  display.println("oil");
-  display.setCursor(65,14);
-  display.println("coolant");
-
-  display.setFont(&FreeSans9pt7b);
+  draw_layout();
+  // Mock values
   display.setTextSize(2);
-  display.setCursor(0,55);
+  display.setCursor(0, 41);
   display.println("---");
-  display.setCursor(64,55);
+  display.setCursor(64, 41);
   display.println("---");
-  
-  display.display();
+  display.setTextSize(1);
+  display.setCursor(20, 60);
+  display.println("---/---");
+
 }
 
 
@@ -234,7 +238,6 @@ void display_noconn()
 
 void draw_layout()
 {
-  Serial.println("Display debugging: draw_layout()");
   display.clearDisplay();
   display.drawRoundRect(0, 0, 63, 45, 4, WHITE);
   display.drawRoundRect(65, 0, 63, 45, 4, WHITE);
@@ -249,16 +252,6 @@ void draw_layout()
   display.drawBitmap(112, 2, epd_bitmap_icon_celcius, 14, 14, WHITE);
   //display.fillRect(112, 48, 16, 16, WHITE);
   display.drawBitmap(0, 48, epd_bitmap_icon_turbo, 16, 16, WHITE);
-
-  // Mock values
-  display.setTextSize(2);
-  display.setCursor(0, 41);
-  display.println("126");
-  display.setCursor(64, 41);
-  display.println("126");
-  display.setTextSize(1);
-  display.setCursor(20, 60);
-  display.println("0,05/0,84");
 
   // Labels
   //display.setTextSize(1);
@@ -324,12 +317,12 @@ void draw_bootup(bool status_bluetooth, bool status_serial)
   display.println("Serial");
 
   // Icons
-  if ( status_bluetooth == true ){
+  if ( status_bluetooth == false ){
     display.drawBitmap(1, 16, epd_bitmap_icon_box, 16, 16, WHITE);
   } else {
     display.drawBitmap(1, 16, epd_bitmap_icon_box_checked, 16, 16, WHITE);
   }
-  if ( status_serial == true ){
+  if ( status_serial == false ){
     display.drawBitmap(1, 36, epd_bitmap_icon_box, 16, 16, WHITE);
   } else {
     display.drawBitmap(1, 36, epd_bitmap_icon_box_checked, 16, 16, WHITE);
