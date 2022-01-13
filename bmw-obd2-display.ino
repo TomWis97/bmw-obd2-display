@@ -1,3 +1,7 @@
+// TODO
+// - Oil and coolant 1px to right
+// - Turbo pressure not working
+
 #include "BluetoothSerial.h"
 #include "src/ELMduino/src/ELMduino.h"
 
@@ -17,6 +21,7 @@ float pressure = 0;
 float min_voltage = 0;
 float max_pressure = 0;
 bool monitor_voltage = true;
+unsigned long last_updated; // millis() when screen has last been drawn.
 
 // Display stuff
 #include <Wire.h>
@@ -91,7 +96,7 @@ void setup()
     Serial.println(F("SSD1306 allocation failed"));
     for(;;);
   }
-  delay(2000);
+  delay(250);
   display.clearDisplay();
   display.setRotation(2);
 
@@ -127,7 +132,7 @@ void setup()
   display.clearDisplay();
   draw_bootup(true, false);
   display.display();
-  delay(1000);
+  delay(250);
   if (!myELM327.begin(ELM_PORT, true, 2000))
   {
     for (int steps = 0; steps <= 240; steps++) {
@@ -142,9 +147,10 @@ void setup()
   display.clearDisplay();
   draw_bootup(true, true);
   display.display();
-  delay(1000);
+  delay(250);
   Serial.println("Connected to ELM327");
-  min_voltage = myELM327.ctrlModVoltage();
+  // Set voltage to a high number so actual voltage will end up lower.
+  min_voltage = 20.0
 }
 
 
@@ -184,7 +190,8 @@ void loop()
     if (monitor_voltage == true) {
       // Voltage
       float tempVoltage = myELM327.ctrlModVoltage();
-      if (tempVoltage < min_voltage) {
+      if (tempVoltage < min_voltage && tempVoltage > 3.0) {
+        // Prevent voltage going negative.
         min_voltage = tempVoltage;
       }
       if (rpm > 800) {
@@ -194,9 +201,12 @@ void loop()
       }
     }
 
-    display_normal();
+    if ( (millis() - last_updated) > 2000) {
+      // Update display every 2 seconds.
+      display_normal();
+      last_updated = millis();
+    }
 
-    delay(2000);
   } else {
     display_noconn();
     myELM327.printError();
@@ -206,7 +216,6 @@ void loop()
 void display_normal()
 {
   draw_layout();
-  // Mock values
   display.setTextSize(2);
   display.setCursor(0, 41);
   display.println(oil);
@@ -215,6 +224,7 @@ void display_normal()
   display.setTextSize(1);
   display.setCursor(20, 60);
   display.println(String(pressure, 2) + "/" + String(max_pressure, 2));
+  display.display();
 }
 
 void display_noconn()
@@ -229,7 +239,7 @@ void display_noconn()
   display.setTextSize(1);
   display.setCursor(20, 60);
   display.println("---/---");
-
+  display.display();
 }
 
 
@@ -259,12 +269,11 @@ void draw_layout()
   //display.println("Oil");
   //display.setCursor(65,14);
   //display.println("Coolant");
-
-  display.display();
 }
 
 //////////////////////////////////////
 // Battery voltage
+
 void draw_battery(float voltage){
   display.fillRect(20, 8, 88, 46, BLACK);
   display.drawRect(20, 8, 88, 46, WHITE);
