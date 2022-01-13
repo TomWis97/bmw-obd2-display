@@ -28,10 +28,55 @@ uint64_t oil = 0;
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 // End display stuff
 
+////////////////////
+// Define icons
+// 'icon_box', 16x16px
+const unsigned char epd_bitmap_icon_box [] PROGMEM = {
+	0xff, 0xff, 0x80, 0x01, 0x80, 0x01, 0x80, 0x01, 0x80, 0x01, 0x80, 0x01, 0x80, 0x01, 0x80, 0x01, 
+	0x80, 0x01, 0x80, 0x01, 0x80, 0x01, 0x80, 0x01, 0x80, 0x01, 0x80, 0x01, 0x80, 0x01, 0xff, 0xff
+};
+// 'icon_box_checked', 16x16px
+const unsigned char epd_bitmap_icon_box_checked [] PROGMEM = {
+	0xff, 0xff, 0x80, 0x07, 0x80, 0x0f, 0x80, 0x0f, 0x80, 0x1d, 0x80, 0x39, 0x80, 0x39, 0x80, 0x71, 
+	0xc0, 0xe1, 0xe0, 0xe1, 0xf1, 0xc1, 0xbb, 0x81, 0x9f, 0x81, 0x8f, 0x01, 0x86, 0x01, 0xff, 0xff
+};
+// 'icon_turbo', 16x16px
+const unsigned char epd_bitmap_icon_turbo [] PROGMEM = {
+	0xf8, 0xff, 0xfd, 0xff, 0x7f, 0xff, 0x3f, 0xff, 0x3f, 0xf0, 0x7f, 0xf8, 0x7f, 0xf8, 0xfc, 0xfc, 
+	0xf8, 0x7c, 0xf8, 0x7c, 0xfc, 0xfc, 0x7f, 0xf8, 0x7f, 0xf8, 0x3f, 0xf0, 0x1f, 0xe0, 0x07, 0x80
+};
+// 'icon_celcius', 14x14px
+const unsigned char epd_bitmap_icon_celcius [] PROGMEM = {
+	0xe1, 0xe0, 0xa3, 0xf0, 0xa7, 0x38, 0xe6, 0x1c, 0x0c, 0x0c, 0x0c, 0x00, 0x0c, 0x00, 0x0c, 0x00, 
+	0x0c, 0x00, 0x0c, 0x0c, 0x06, 0x1c, 0x07, 0x38, 0x03, 0xf0, 0x01, 0xe0
+};
+// 'icon_coolant', 14x14px
+const unsigned char epd_bitmap_icon_coolant [] PROGMEM = {
+	0x03, 0xe0, 0x03, 0x00, 0x03, 0xe0, 0x03, 0x00, 0x03, 0xe0, 0x03, 0x00, 0x07, 0x80, 0x4f, 0xc8, 
+	0xaf, 0xd4, 0x07, 0x80, 0x03, 0x00, 0x30, 0xc0, 0x49, 0x24, 0x86, 0x18
+};
+// 'icon_oil', 20x14px
+const unsigned char epd_bitmap_icon_oil [] PROGMEM = {
+	0x00, 0x00, 0x00, 0x1f, 0xf8, 0x00, 0x1f, 0xf8, 0x00, 0x01, 0x80, 0xf0, 0x01, 0x83, 0xf0, 0xff, 
+	0xff, 0xe0, 0xbf, 0xff, 0xe0, 0xbf, 0xff, 0xc0, 0xff, 0xff, 0x90, 0x3f, 0xff, 0x10, 0x3f, 0xfe, 
+	0x00, 0x3f, 0xfc, 0x00, 0x3f, 0xf8, 0x10, 0x00, 0x00, 0x00
+};
+
+// Array of all bitmaps for convenience. (Total bytes used to store images in PROGMEM = 304)
+const int epd_bitmap_allArray_LEN = 6;
+const unsigned char* epd_bitmap_allArray[6] = {
+	epd_bitmap_icon_box,
+	epd_bitmap_icon_box_checked,
+	epd_bitmap_icon_celcius,
+	epd_bitmap_icon_coolant,
+	epd_bitmap_icon_oil,
+	epd_bitmap_icon_turbo
+};
+
 
 void setup()
 {
-  Serial.begin(115200);
+  //Serial.begin(115200);
 
 #if LED_BUILTIN
   pinMode(LED_BUILTIN, OUTPUT);
@@ -48,6 +93,11 @@ void setup()
   display.setRotation(2);
 
   // DEBUGGING
+  mockup_boot();
+  delay(1000);
+  draw_layout();
+  delay(4000);
+  draw_battery(10.48);
   draw_layout();
   delay(100000);
 
@@ -192,8 +242,13 @@ void draw_layout()
   display.setTextColor(WHITE);
 
   // Draw icons
-  display.fillRect(5, 2, 14, 14, WHITE);
-  display.fillRect(69, 2, 14, 14, WHITE);
+  display.drawBitmap(5, 2, epd_bitmap_icon_oil, 20, 14, WHITE);
+  //display.fillRect(69, 2, 14, 14, WHITE);
+  display.drawBitmap(69, 2, epd_bitmap_icon_coolant, 14, 14, WHITE);
+  display.drawBitmap(47, 2, epd_bitmap_icon_celcius, 14, 14, WHITE);
+  display.drawBitmap(112, 2, epd_bitmap_icon_celcius, 14, 14, WHITE);
+  //display.fillRect(112, 48, 16, 16, WHITE);
+  display.drawBitmap(0, 48, epd_bitmap_icon_turbo, 16, 16, WHITE);
 
   // Mock values
   display.setTextSize(2);
@@ -201,6 +256,9 @@ void draw_layout()
   display.println("126");
   display.setCursor(64, 41);
   display.println("126");
+  display.setTextSize(1);
+  display.setCursor(20, 60);
+  display.println("0,05/0,84");
 
   // Labels
   //display.setTextSize(1);
@@ -208,5 +266,91 @@ void draw_layout()
   //display.println("Oil");
   //display.setCursor(65,14);
   //display.println("Coolant");
-  //display.display();
+
+  display.display();
+}
+
+//////////////////////////////////////
+// Battery voltage
+void draw_battery(float voltage){
+  display.fillRect(20, 8, 88, 46, BLACK);
+  display.drawRect(20, 8, 88, 46, WHITE);
+  display.setTextSize(1);
+  display.setCursor(21, 22);
+  display.println("Min. batt.");
+  display.setCursor(95, 50);
+  display.println("V");
+  display.setCursor(18, 49);
+  display.setTextSize(2);
+  display.println(String(voltage, 1));
+  display.display();
+  // Wait a bit before overwriting the display.
+  delay(5000);
+}
+
+//////////////////////////////////////
+// Bootup layout
+
+void mockup_boot(){
+  bool status_bluetooth = false;
+  bool status_serial = false;
+  for (int steps = 0; steps <= 60; steps++) {
+    // status mockup
+    if ( steps == 20 ) {
+      status_bluetooth = true;
+    }
+    if ( steps == 40 ) {
+      status_serial = true;
+    }
+
+    display.clearDisplay();
+    draw_bootup_animation(steps);
+    draw_bootup(status_bluetooth, status_serial);
+    display.display();
+    delay(500);
+  }
+}
+
+void draw_bootup(bool status_bluetooth, bool status_serial)
+{
+  display.setFont(&FreeSans9pt7b);
+  display.setTextColor(WHITE);
+  display.setTextSize(1);
+
+  // Labels
+  display.setCursor(20, 30);
+  display.println("Bluetooth");
+  display.setCursor(20, 50);
+  display.println("Serial");
+
+  // Icons
+  if ( status_bluetooth == true ){
+    display.drawBitmap(1, 16, epd_bitmap_icon_box, 16, 16, WHITE);
+  } else {
+    display.drawBitmap(1, 16, epd_bitmap_icon_box_checked, 16, 16, WHITE);
+  }
+  if ( status_serial == true ){
+    display.drawBitmap(1, 36, epd_bitmap_icon_box, 16, 16, WHITE);
+  } else {
+    display.drawBitmap(1, 36, epd_bitmap_icon_box_checked, 16, 16, WHITE);
+  }
+}
+
+void draw_bootup_animation(int step)
+{
+  Serial.print("Animation step:"); Serial.println(step);
+  int x_pos=114;
+  int y_pos=25;
+  if ( step % 4 != 0) { // Top-left
+    display.fillRect(x_pos, y_pos, 5, 5, WHITE);
+  }
+  if ( step % 4 != 1) { // Top-right
+    display.fillRect(x_pos + 8, y_pos, 5, 5, WHITE);
+  }
+  if ( step % 4 != 2) { // Bottom-right
+    display.fillRect(x_pos + 8, y_pos + 8, 5, 5, WHITE);
+  }
+  if ( step % 4 != 3) { // Bottom-left
+    display.fillRect(x_pos, y_pos + 8, 5, 5, WHITE);
+  }
 }
