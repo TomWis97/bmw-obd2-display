@@ -150,13 +150,12 @@ void setup()
   delay(250);
   Serial.println("Connected to ELM327");
   // Set voltage to a high number so actual voltage will end up lower.
-  min_voltage = 20.0
+  min_voltage = 20.0;
 }
 
 
 void loop()
 {
-  Serial.println("------------------------------");
   float tempRPM = myELM327.rpm();
   if (myELM327.status == ELM_SUCCESS)
   {
@@ -164,16 +163,13 @@ void loop()
     
     // RPM stuff
     rpm = (uint32_t)tempRPM;
-    Serial.print("RPM: "); Serial.println(rpm);
 
     // Coolant temperature
     float tempCoolant = myELM327.engineCoolantTemp();
     coolant = (uint32_t)tempCoolant;
-    Serial.print("Coolant temperature: "); Serial.println(coolant);
 
     // Turbo pressure
     float pressure = myELM327.manifoldPressure();
-    Serial.print("Turbo pressure: "); Serial.println(pressure);
     if (pressure > max_pressure) {
       max_pressure = pressure;
     }
@@ -182,10 +178,11 @@ void loop()
     if (myELM327.queryPID(34, 17410)) {
       uint64_t tempOil = myELM327.findResponse();
       oil = tempOil * 191.25 / 255 - 48;
-      Serial.print("Oil temperature:"); Serial.println(oil);
     } else {
-      Serial.println("Error while getting temperature!!");
+      Serial.println("Error while getting oil temperature!");
     }
+    // Printing data to serial, comma seperated.
+    Serial.print("Data:"); Serial.print(rpm); Serial.print(","); Serial.print(oil); Serial.print(","); Serial.print(coolant); Serial.print(","); Serial.println(pressure);
 
     if (monitor_voltage == true) {
       // Voltage
@@ -217,9 +214,9 @@ void display_normal()
 {
   draw_layout();
   display.setTextSize(2);
-  display.setCursor(0, 41);
+  display.setCursor(2, 41);
   display.println(oil);
-  display.setCursor(64, 41);
+  display.setCursor(66, 41);
   display.println(coolant);
   display.setTextSize(1);
   display.setCursor(20, 60);
