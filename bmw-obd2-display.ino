@@ -1,7 +1,3 @@
-// TODO
-// - Oil and coolant 1px to right
-// - Turbo pressure not working
-
 #include "BluetoothSerial.h"
 #include "src/ELMduino/src/ELMduino.h"
 
@@ -17,9 +13,11 @@ ELM327 myELM327;
 uint32_t rpm = 0;
 uint32_t coolant = 0;
 uint64_t oil = 0;
-float pressure = 0;
+int manifold_pressure = 0;
+int baro_pressure = 0;
+int boost_pressure = 0;
 float min_voltage = 0;
-float max_pressure = 0;
+int max_pressure = -100;
 bool monitor_voltage = true;
 unsigned long last_updated; // millis() when screen has last been drawn.
 
@@ -169,9 +167,13 @@ void loop()
     coolant = (uint32_t)tempCoolant;
 
     // Turbo pressure
-    float pressure = myELM327.manifoldPressure();
-    if (pressure > max_pressure) {
-      max_pressure = pressure;
+    manifold_pressure = myELM327.manifoldPressure();
+    baro_pressure = myELM327.absBaroPressure();
+    boost_pressure = manifold_pressure - baro_pressure;
+    Serial.print("Manifold="); Serial.print(manifold_pressure); Serial.print(" Baro="); Serial.print(baro_pressure); Serial.print(" Boost="); Serial.println(boost_pressure);
+
+    if (boost_pressure > max_pressure) {
+      max_pressure = boost_pressure;
     }
 
     // Oil temperature
@@ -182,7 +184,7 @@ void loop()
       Serial.println("Error while getting oil temperature!");
     }
     // Printing data to serial, comma seperated.
-    Serial.print("Data:"); Serial.print(rpm); Serial.print(","); Serial.print(oil); Serial.print(","); Serial.print(coolant); Serial.print(","); Serial.println(pressure);
+    //Serial.print("Data:"); Serial.print(rpm); Serial.print(","); Serial.print(oil); Serial.print(","); Serial.print(coolant); Serial.print(","); Serial.println(boost_pressure);
 
     if (monitor_voltage == true) {
       // Voltage
@@ -191,7 +193,7 @@ void loop()
         // Prevent voltage going negative.
         min_voltage = tempVoltage;
       }
-      if (rpm > 800) {
+      if (rpm > 600) {
         //Engine has been started. Displaying minimum voltage.
         draw_battery(min_voltage);
         monitor_voltage = false;
@@ -205,6 +207,7 @@ void loop()
     }
 
   } else {
+    monitor_voltage = true;
     display_noconn();
     myELM327.printError();
   }
@@ -220,7 +223,7 @@ void display_normal()
   display.println(coolant);
   display.setTextSize(1);
   display.setCursor(20, 60);
-  display.println(String(pressure, 2) + "/" + String(max_pressure, 2));
+  display.println(String(boost_pressure) + " (" + String(max_pressure) + ") kPa");
   display.display();
 }
 
