@@ -229,9 +229,9 @@ void display_noconn()
   draw_layout();
   // Mock values
   display.setTextSize(2);
-  display.setCursor(0, 41);
+  display.setCursor(2, 41);
   display.println("---");
-  display.setCursor(64, 41);
+  display.setCursor(66, 41);
   display.println("---");
   display.setTextSize(1);
   display.setCursor(20, 60);
